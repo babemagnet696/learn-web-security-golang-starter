@@ -54,7 +54,6 @@ func (store *Store) CreateFromCart(ctx context.Context, userID int64, cartItems 
 	for _, cartItem := range cartItems {
 		totalCents += cartItem.LineTotalCents
 	}
-	totalCents -= discountCents
 	transaction, err := store.database.BeginTx(ctx, nil)
 	if err != nil {
 		return Order{}, fmt.Errorf("begin order transaction: %w", err)
