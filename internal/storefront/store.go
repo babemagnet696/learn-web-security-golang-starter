@@ -3,8 +3,8 @@ package storefront
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
-	"strconv"
 
 	"github.com/bootdotdev/learn-web-security/internal/database/dbgen"
 )
@@ -51,17 +51,15 @@ func (store *Store) ListProducts(ctx context.Context, maxResults int64) ([]Produ
 }
 
 func (store *Store) SearchProducts(ctx context.Context, query string, maxResults int64) ([]Product, error) {
-	searchSQL := `SELECT id, name, description, image_path, price_cents, cost_cents, inventory_count, is_active, created_at
-		FROM products
-		WHERE is_active = 1 AND (name LIKE '%` + query + `%' OR description LIKE '%` + query + `%')
-		ORDER BY id
-		LIMIT ` + strconv.FormatInt(maxResults, 10)
-	rows, err := store.database.QueryContext(ctx, searchSQL)
-	if err != nil {
+	result, err := store.queries.SearchActiveProducts(ctx, dbgen.SearchActiveProductsParams{
+		Pattern: "%"+query+"%",
+		MaxResults: maxResults,
+	})
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, fmt.Errorf("search products: %w", err)
 	}
-	defer rows.Close()
-	return scanProducts(rows)
+	
+	return mapProducts(result), nil
 }
 
 func (store *Store) ListAllProducts(ctx context.Context) ([]Product, error) {
